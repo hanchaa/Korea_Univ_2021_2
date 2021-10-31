@@ -35,11 +35,13 @@ static int my_open(struct inode *inode, struct file *file) {
 }
 
 static ssize_t my_read(struct file *file, char __user *user_buffer, size_t count, loff_t *ppos) {
+    char s[1024] = "";
     int len = 0;
 
     if (q_front != q_rear) {
         q_front = (q_front + 1) % BUFFER_MAX_LEN;
-        len = sprintf(user_buffer, "FS: %s || TIME: %ld.%ld|| BLK_NUMBER: %lu\n", blk_queue[q_front].fs_name, blk_queue[q_front].sec, blk_queue[q_front].usec, blk_queue[q_front].block_number);
+        len = sprintf(s, "FS: %s || TIME: %ld.%ld|| BLK_NUMBER: %lu\n", blk_queue[q_front].fs_name, blk_queue[q_front].sec, blk_queue[q_front].usec, blk_queue[q_front].block_number);
+        copy_to_user(user_buffer, s, len);
     }
 
     return len;
