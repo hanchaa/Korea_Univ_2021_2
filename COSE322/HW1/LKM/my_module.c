@@ -36,12 +36,12 @@ static int my_open(struct inode *inode, struct file *file) {
 }
 
 static ssize_t my_read(struct file *file, char __user *user_buffer, size_t count, loff_t *ppos) {
-    char s[1024] = "";
+    char s[512] = "";
     int len = 0;
 
     if (q_front != q_rear) {
         q_front = (q_front + 1) % BUFFER_MAX_LEN;
-        len = sprintf(s, "FS: %s || TIME: %ld.%ld|| BLK_NUMBER: %lu\n", blk_queue[q_front].fs_name, blk_queue[q_front].sec, blk_queue[q_front].usec, blk_queue[q_front].block_number);
+        len = sprintf(s, "FS: %s || TIME: %ld.%ld || BLK_NUMBER: %lu\n", blk_queue[q_front].fs_name, blk_queue[q_front].sec, blk_queue[q_front].usec, blk_queue[q_front].block_number);
         copy_to_user(user_buffer, s, len);
     }
 
@@ -49,20 +49,20 @@ static ssize_t my_read(struct file *file, char __user *user_buffer, size_t count
 }
 
 
-// static ssize_t my_write(struct file * file, const char __user *user_buffer, size_t count, loff_t *ppos){
-//     char kernel_buffer[100];
-//     copy_from_user(kernel_buffer, user_buffer, 5);
+static ssize_t my_write(struct file * file, const char __user *user_buffer, size_t count, loff_t *ppos){
+    char kernel_buffer[100];
+    copy_from_user(kernel_buffer, user_buffer, sizeof(kernel_buffer));
 
-//     printk(KERN_INFO "Simple Module write!: %s\n", kernel_buffer);
+    printk(KERN_INFO "Simple Module write!: %s\n", kernel_buffer);
 
-//     return count;
-// }
+    return count;
+}
 
 static const struct file_operations myproc_fops = {
     .owner = THIS_MODULE,
     .open = my_open,
     .read = my_read,
-    // .write = my_write,
+    .write = my_write,
 };
 
 
