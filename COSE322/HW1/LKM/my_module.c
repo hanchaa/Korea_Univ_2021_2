@@ -35,6 +35,7 @@ static int my_open(struct inode *inode, struct file *file) {
     return 0;
 }
 
+// user가 myproc 파일을 read 할 때 dequeue해서 write info 하나씩 출력
 static ssize_t my_read(struct file *file, char __user *user_buffer, size_t count, loff_t *ppos) {
     char s[512] = "";
     int len = 0;
@@ -42,22 +43,23 @@ static ssize_t my_read(struct file *file, char __user *user_buffer, size_t count
     if (q_front != q_rear) {
         q_front = (q_front + 1) % BUFFER_MAX_LEN;
         len = sprintf(s, "FS: %s || TIME: %ld.%ld || BLK_NUMBER: %lu\n", blk_queue[q_front].fs_name, blk_queue[q_front].sec, blk_queue[q_front].usec, blk_queue[q_front].block_number);
-        copy_to_user(user_buffer, s, len);
+        copy_to_user(user_buffer, s, len);  // kernel에서 user로 copy
     }
 
     return len;
 }
 
-
+// user가 myproc 파일에 write 할 때 사용
 static ssize_t my_write(struct file * file, const char __user *user_buffer, size_t count, loff_t *ppos){
     char kernel_buffer[100];
-    copy_from_user(kernel_buffer, user_buffer, sizeof(kernel_buffer));
+    copy_from_user(kernel_buffer, user_buffer, sizeof(kernel_buffer));  // user에서 kernel로 copy
 
     printk(KERN_INFO "Simple Module write!: %s\n", kernel_buffer);
 
     return count;
 }
 
+// 정의한 함수 연결
 static const struct file_operations myproc_fops = {
     .owner = THIS_MODULE,
     .open = my_open,
@@ -65,7 +67,7 @@ static const struct file_operations myproc_fops = {
     .write = my_write,
 };
 
-
+// init할 때 myproc directory, file 생성
 static int __init my_module_init(void) {
     printk(KERN_INFO "Hello My Module\n");
     proc_dir = proc_mkdir(PROC_DIRNAME, NULL);
@@ -74,6 +76,7 @@ static int __init my_module_init(void) {
     return 0;
 }
 
+// init에서 생성한 directory, file 삭제
 static void __exit my_module_exit(void) {
     printk(KERN_INFO "Bye My Module\n");
     remove_proc_entry(PROC_FILENAME, proc_dir);
