@@ -1,6 +1,10 @@
+# @author: 차주한, 김경하
+# 2021.10.16
+# my_module make file
+
 obj-m += my_module.o
 
-KDIR = ~/Desktop/linux-4.4
+KDIR = /usr/src/linux-4.4
 
 all:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules

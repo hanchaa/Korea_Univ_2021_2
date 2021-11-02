@@ -33,8 +33,14 @@
 #include <linux/ratelimit.h>
 #include <linux/pm_runtime.h>
 #include <linux/blk-cgroup.h>
+/* start
+ * @author: 차주한 김경하
+ * 2021.10.16
+ * 헤더 추가 설정
+ */
 #include <linux/time.h> // do_gettimeofday()사용, time 불러오기
 #include <linux/types.h>
+// end
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/block.h>
@@ -44,7 +50,8 @@
 
 /* start
  * @author: 차주한 김경하
- * circular queue entry 구조체 정의
+ * 2021.10.16
+ * circular queue 구조체 정의
  */
 #define BUFFER_MAX_LEN 2000
 struct BLK_QUEUE {
@@ -2134,6 +2141,8 @@ blk_qc_t submit_bio(int rw, struct bio *bio)
 			
 			/* start
 			 * @author: 차주한 김경하
+			 * 2021.10.16
+			 * 쓰기가 발생하면 queue에 정보 저장
 			 */
 			if (bio != NULL && bio->bi_bdev != NULL && bio->bi_bdev->bd_super != NULL && bio->bi_bdev->bd_super->s_type != NULL) {
 				const char *fs_name = bio->bi_bdev->bd_super->s_type->name;

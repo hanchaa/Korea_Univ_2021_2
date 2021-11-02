@@ -372,6 +372,7 @@ static int nilfs_segbuf_submit_bio(struct nilfs_segment_buffer *segbuf,
 	/*
 	 * start
 	 * @author: 차주한, 김경하
+	 * 2021.10.16
 	 * bd_super 멤버가 Nilfs2의 Superblock을 참조하도록 수정
 	 */
 	if (bio != NULL && bio->bi_bdev != NULL) {
