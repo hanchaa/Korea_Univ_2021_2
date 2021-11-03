@@ -52,7 +52,7 @@ static ssize_t my_read(struct file *file, char __user *user_buffer, size_t count
 // user가 myproc 파일에 write 할 때 사용
 static ssize_t my_write(struct file * file, const char __user *user_buffer, size_t count, loff_t *ppos){
     char kernel_buffer[100];
-    copy_from_user(kernel_buffer, user_buffer, sizeof(kernel_buffer));  // user에서 kernel로 copy
+    copy_from_user(kernel_buffer, user_buffer, count);
 
     printk(KERN_INFO "Simple Module write!: %s\n", kernel_buffer);
 
