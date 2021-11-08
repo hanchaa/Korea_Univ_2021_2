@@ -260,10 +260,21 @@ int my_ip_output(struct my_ip_header my_iph, struct my_ip_routing_entry * rentry
     // Else, use the next hop of found entry
     // !!! Fill the blank (Setup next hop variable)
 
+	if (rentry->next_hop == NULL) {
+		next_hop = my_iph.dest;
+	}
+	else {
+		next_hop = rentry->next_hop;
+	}
+
 	cache_ptr = output_interface->cache_list;
 	while(cache_ptr != NULL) {
         // Retrieve ARP Cache to find the mac address for the next hop
         // !!! Fill the blank (Setup next_hop_mac variable)
+		if (strcmp(cache_ptr->dest, next_hop) == 0) {
+			next_hop_mac = cache_ptr->dest_mac;
+			break;
+		}
 		
 		cache_ptr = cache_ptr->next;
 	}
@@ -293,6 +304,16 @@ int my_ip_output(struct my_ip_header my_iph, struct my_ip_routing_entry * rentry
 	buffer_ptr += sizeof(unsigned short);
 
     // !!! Fill the blank (Set dest, source len, source, ttl)
+	memcpy(buffer_ptr, my_iph.dest, my_iph.dest_len);
+	buffer_ptr += my_iph.dest_len;
+
+	*((unsigned short *)buffer_ptr) = htons(my_iph.source_len);
+	buffer_ptr += sizeof(unsigned short);
+
+	memcpy(buffer_ptr, my_iph.source, my_iph.source_len);
+	buffer_ptr += my_iph.source_len;
+
+	*buffer_ptr = my_iph.ttl;
 
 	// Adding Ethernet Header
 	struct eth_header eh;
@@ -331,6 +352,11 @@ int my_ip_forward(struct my_ip_header my_iph) {
 
     // TTL Check - If 0, Drop and stop further processing
     // !!! Fill the blank
+	my_iph.ttl -= 1;
+	if (my_iph.ttl == 0) {
+		printf("TTL is 0\n");
+		return -1;
+	}
 
 	if(rentry == NULL) {
 		printf("No Routing Entry\n");
@@ -424,6 +450,20 @@ void processEthernet(unsigned char * buffer) {
     // Get ethertype and dispatch payload part to proper process function
     // Endian translation is needed
     // !!! Fill the blank
+	memcpy(eh.dest, buffer, 6);
+	buffer += 6;
+	
+	memcpy(eh.source, buffer, 6);
+	buffer +=6;
+
+	eh.eth_type = ethtype = ntohs(*(unsigned short *)buffer);
+	buffer += 2;
+
+	struct interface_info * ptr = interface_list;
+
+	if (ethtype == 0xfffe) {
+		my_ip_receive(buffer);
+	}
 }
 
 void environment_setup() {
