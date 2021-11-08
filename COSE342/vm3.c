@@ -429,26 +429,19 @@ void processEthernet(unsigned char * buffer) {
 void environment_setup() {
 	unsigned char mac[6];
 
-	sscanf(VM1 interface enp0s3 mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
-	add_arp_cache_entry("enp0s3", "Dongdaemungu 1", mac);
-	sscanf(VM3 interface enp0s3 mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
-	add_arp_cache_entry("enp0s8", "Sungbukgu Anamdong 2", mac);
-	add_routing_entry("Dongdaemungu", NULL, "enp0s3");
-	add_routing_entry("Sungbukgu Anamdong", NULL, "enp0s8");
-	add_routing_entry("Sungbukgu Bomundong", NULL, "enp0s9");
+	sscanf("08:00:27:81:b8:90", "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+	add_arp_cache_entry("enp0s3", "Sungbukgu Anamdong 1", mac);
+	add_routing_entry("Dongdaemungu", "Sungbukgu Anamdong 1", "enp0s3");
+	add_routing_entry("Sungbukgu Anamdong", NULL, "enp0s3");
 }
 
 int main() {
 	unsigned char buffer[1500];
 	unsigned int received = 0;
-	//int sock_enp0s3 = setup_my_interface("enp0s3", "Dongdaemungu 1"); // VM1
-	int sock_enp0s3 = setup_my_interface("enp0s3", "Dongdaemungu 2"); // VM2
-	int sock_enp0s8 = setup_my_interface("enp0s8", "Sungbukgu Anamdong 1"); // VM2
-	int sock_enp0s9 = setup_my_interface("enp0s9", "Sungbukgu Bomundong 1"); // VM2
-	//int sock_enp0s3 = setup_my_interface("enp0s3", "Sungbukgu Anamdong 2"); // VM3
+	int sock_enp0s3 = setup_my_interface("enp0s3", "Sungbukgu Anamdong 2"); // VM3
 	environment_setup();
 
-	is_forward = true;
+	is_forward = false;
 
 	received = recv(sock_enp0s3, buffer, 1500, 0);
 	printf("Frame received\n");
