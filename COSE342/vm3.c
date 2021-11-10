@@ -450,19 +450,10 @@ void processEthernet(unsigned char * buffer) {
     // Get ethertype and dispatch payload part to proper process function
     // Endian translation is needed
     // !!! Fill the blank
-	memcpy(eh.dest, buffer, 6);
-	buffer += 6;
-	
-	memcpy(eh.source, buffer, 6);
-	buffer +=6;
-
-	eh.eth_type = ethtype = ntohs(*(unsigned short *)buffer);
-	buffer += 2;
-
-	struct interface_info * ptr = interface_list;
+	ethtype = ntohs(eh.eth_type);
 
 	if (ethtype == 0xfffe) {
-		my_ip_receive(buffer);
+		my_ip_receive(buffer + sizeof(eh));
 	}
 }
 
