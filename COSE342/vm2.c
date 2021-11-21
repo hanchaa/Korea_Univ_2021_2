@@ -464,6 +464,8 @@ void environment_setup() {
 	add_arp_cache_entry("enp0s3", "Dongdaemungu 1", mac);
 	sscanf("08:00:27:ab:e0:5c", "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
 	add_arp_cache_entry("enp0s8", "Sungbukgu Anamdong 2", mac);
+	sscanf("08:00:27:65:43:21", "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+	add_arp_cache_entry("enp0s9", "Sungbukgu Bomundong 2", mac);
 	add_routing_entry("Dongdaemungu", NULL, "enp0s3");
 	add_routing_entry("Sungbukgu Anamdong", NULL, "enp0s8");
 	add_routing_entry("Sungbukgu Bomundong", NULL, "enp0s9");
