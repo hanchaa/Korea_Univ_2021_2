@@ -1,2 +1,4 @@
 *.ini
 **/.idea/
+
+COSE362/.vector_cache/
