@@ -7,6 +7,7 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/netfilter.h>
+#include <linux/netfilter_ipv4.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
 
@@ -105,7 +106,7 @@ static struct nf_hook_ops netfilter_pre_routing_ops = {
     .hook = netfilter_pre_routing,
     .pf = PF_INET,
     .hooknum = NF_INET_PRE_ROUTING,
-    .priority = 1,
+    .priority = NF_IP_PRI_FIRST,
 };
 
 static unsigned int netfilter_monitor_packet(void *priv, struct sk_buff *skb, const struct nf_hook_state *state) {
@@ -119,29 +120,62 @@ static unsigned int netfilter_monitor_packet(void *priv, struct sk_buff *skb, co
     int src_port = ntohs(tcph->source);
     int dst_port = ntohs(tcph->dest);
 
-    if (state->hook == NF_INET_LOCAL_IN && src_port == 3333 && dst_port == 3333)
-        printk(KERN_INFO "drop: LOCAL_IN (%d; %d; %d; %d.%d.%d.%d; %d.%d.%d.%d)\n",
+    if (state->hook == NF_INET_LOCAL_IN) {
+        Rule *cur = rule_head;
+
+        while (cur != NULL) {
+            if (cur->type == DROP)
+                break;
+            
+            cur = cur->next;
+        }
+
+        if (cur != NULL && src_port == cur->change_port && dst_port == cur->change_port)
+            printk(KERN_INFO "drop: LOCAL_IN (%d; %d; %d; %d.%d.%d.%d; %d.%d.%d.%d)\n",
+                    iph->protocol,
+                    src_port,
+                    dst_port,
+                    NIPQUAD(iph->saddr),
+                    NIPQUAD(iph->daddr));
+    }
+
+    else if (state->hook == NF_INET_FORWARD) {
+        Rule *cur = rule_head;
+
+        while (cur != NULL) {
+            if (cur->type == FORWARDING)
+                break;
+            
+            cur = cur->next;
+        }
+        
+        if (cur != NULL && src_port == cur->change_port && dst_port == cur->change_port)
+            printk(KERN_INFO "forward: FORWARD (%d; %d; %d; %d.%d.%d.%d; %d.%d.%d.%d)\n",
                 iph->protocol,
                 src_port,
                 dst_port,
                 NIPQUAD(iph->saddr),
                 NIPQUAD(iph->daddr));
+    }
+    
+    else if (state->hook == NF_INET_POST_ROUTING && src_port == 7777 && dst_port == 7777) {
+        Rule *cur = rule_head;
 
-    if (state->hook == NF_INET_FORWARD && src_port == 7777 && dst_port == 7777)
-        printk(KERN_INFO "forward: FORWARD (%d; %d; %d; %d.%d.%d.%d; %d.%d.%d.%d)\n",
+        while (cur != NULL) {
+            if (cur->type == FORWARDING)
+                break;
+            
+            cur = cur->next;
+        }
+        
+        if (cur != NULL && src_port == cur->change_port && dst_port == cur->change_port)
+            printk(KERN_INFO "forward: POST_ROUTING (%d; %d; %d; %d.%d.%d.%d; %d.%d.%d.%d)\n",
             iph->protocol,
             src_port,
             dst_port,
             NIPQUAD(iph->saddr),
             NIPQUAD(iph->daddr));
-    
-    else if (state->hook == NF_INET_POST_ROUTING && src_port == 7777 && dst_port == 7777)
-        printk(KERN_INFO "forward: POST_ROUTING (%d; %d; %d; %d.%d.%d.%d; %d.%d.%d.%d)\n",
-        iph->protocol,
-        src_port,
-        dst_port,
-        NIPQUAD(iph->saddr),
-        NIPQUAD(iph->daddr));
+    }
 
     return NF_ACCEPT;
 }
@@ -150,21 +184,21 @@ static struct nf_hook_ops netfilter_local_in_ops = {
     .hook = netfilter_monitor_packet,
     .pf = PF_INET,
     .hooknum = NF_INET_LOCAL_IN,	
-	.priority = 1,
+	.priority = NF_IP_PRI_FIRST
 };
 
 static struct nf_hook_ops netfilter_forward_ops = {
     .hook = netfilter_monitor_packet,
     .pf = PF_INET,
     .hooknum = NF_INET_FORWARD,	
-	.priority = 1,
+	.priority = NF_IP_PRI_FIRST
 };
 
 static struct nf_hook_ops netfilter_post_routing_ops = {
     .hook = netfilter_monitor_packet,
     .pf = PF_INET,
     .hooknum = NF_INET_POST_ROUTING,	
-	.priority = 1,
+	.priority = NF_IP_PRI_FIRST
 };
 
 static int rule_open(struct inode *inode, struct file *file) {
@@ -199,15 +233,17 @@ static ssize_t rule_read(struct file *file, char __user *user_buffer, size_t siz
 static ssize_t rule_add(struct file *file, const char __user *user_buffer, size_t count, loff_t *pos) {
     char buffer[512] = "";
     char ops;
-    Rule *new_rule = (Rule *)kmalloc(sizeof(Rule), GFP_KERNEL);
+    Rule *new_rule = NULL;
 
     if (copy_from_user(buffer, user_buffer, count)) {
-        kfree(new_rule);
         printk(KERN_INFO "Rule add error\n");
 
         return count;
     };
 
+    new_rule = (Rule *)kmalloc(sizeof(Rule), GFP_KERNEL);
+
+    // <src_port> <change_port> <F or D> 형식으로 proc에 작성
     sscanf(buffer, "%d %d %c\n", &(new_rule->src_port), &(new_rule->change_port), &ops);
     new_rule->type = ops == 'F' ? FORWARDING : DROP;
     new_rule->next = NULL;
